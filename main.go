@@ -4,21 +4,22 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// TODO: Move to config
 const connString = "mongodb://localhost:27017"
 const dbName = "contacts-db"
 const collectionName = "contacts"
-const port = 8080
+const port = ":8080"
 
-func getContact(c *fiber.Ctx) {
+func getContact(c *fiber.Ctx) error {
 	collection, err := getMongoDbCollection(connString, dbName, collectionName)
+
 	if err != nil {
-		c.Status(500).Send(err)
-		return
+		return fiber.NewError(500, err.Error())
 	}
 
 	var filter bson.M = bson.M{}
@@ -34,26 +35,23 @@ func getContact(c *fiber.Ctx) {
 	defer cur.Close(context.Background())
 
 	if err != nil {
-		c.Status(500).Send(err)
-		return
+		return fiber.NewError(500, err.Error())
 	}
 
 	cur.All(context.Background(), &results)
 
 	if results == nil {
-		c.SendStatus(404)
-		return
+		return fiber.NewError(404)
 	}
 
-	json, _ := json.Marshal(results)
-	c.Send(json)
+	response, _ := json.Marshal(results)
+	return c.SendString(string(response))
 }
 
-func createContact(c *fiber.Ctx) {
+func createContact(c *fiber.Ctx) error {
 	collection, err := getMongoDbCollection(connString, dbName, collectionName)
 	if err != nil {
-		c.Status(500).Send(err)
-		return
+		return fiber.NewError(500, err.Error())
 	}
 
 	var contact Contact
@@ -61,19 +59,17 @@ func createContact(c *fiber.Ctx) {
 
 	res, err := collection.InsertOne(context.Background(), contact)
 	if err != nil {
-		c.Status(500).Send(err)
-		return
+		return fiber.NewError(500, err.Error())
 	}
 
 	response, _ := json.Marshal(res)
-	c.Send(response)
+	return c.SendString(string(response))
 }
 
-func updateContact(c *fiber.Ctx) {
+func updateContact(c *fiber.Ctx) error {
 	collection, err := getMongoDbCollection(connString, dbName, collectionName)
 	if err != nil {
-		c.Status(500).Send(err)
-		return
+		return fiber.NewError(500, err.Error())
 	}
 	var contact Contact
 	json.Unmarshal([]byte(c.Body()), &contact)
@@ -86,39 +82,38 @@ func updateContact(c *fiber.Ctx) {
 	res, err := collection.UpdateOne(context.Background(), bson.M{"_id": objID}, update)
 
 	if err != nil {
-		c.Status(500).Send(err)
-		return
+		return fiber.NewError(500, err.Error())
 	}
 
 	response, _ := json.Marshal(res)
-	c.Send(response)
+	return c.SendString(string(response))
 }
 
-func deleteContact(c *fiber.Ctx) {
+func deleteContact(c *fiber.Ctx) error {
 	collection, err := getMongoDbCollection(connString, dbName, collectionName)
 
 	if err != nil {
-		c.Status(500).Send(err)
-		return
+		return fiber.NewError(500, err.Error())
 	}
 
 	objID, _ := primitive.ObjectIDFromHex(c.Params("id"))
 	res, err := collection.DeleteOne(context.Background(), bson.M{"_id": objID})
 
 	if err != nil {
-		c.Status(500).Send(err)
-		return
+		return fiber.NewError(500, err.Error())
 	}
 
-	jsonResponse, _ := json.Marshal(res)
-	c.Send(jsonResponse)
+	response, _ := json.Marshal(res)
+	return c.SendString(string(response))
 }
 
 func main() {
 	app := fiber.New()
+
 	app.Get("/contact/:id?", getContact)
 	app.Post("/contact", createContact)
 	app.Put("/contact/:id", updateContact)
 	app.Delete("/contact/:id", deleteContact)
-	app.Listen(8080)
+
+	app.Listen(port)
 }
