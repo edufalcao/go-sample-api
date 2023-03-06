@@ -3,14 +3,16 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+var connString = os.Getenv("MONGODB_URI")
+
 // TODO: Move to config
-const connString = "mongodb://localhost:27017"
 const dbName = "contacts-db"
 const collectionName = "contacts"
 const port = ":8080"

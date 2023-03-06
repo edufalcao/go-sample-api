@@ -1,0 +1,21 @@
+version: "3"
+services:
+  go-sample-api:
+    image: go-sample-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodbasd
+    networks:
+      - sample_net
+    environment:
+      MONGODB_URI: "mongodb://mongodbasd:27017"
+  mongodbasd:
+    image: mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - sample_net
+networks:
+  sample_net:
+    driver: bridge
