@@ -7,6 +7,6 @@ Sample REST API using Golang and Mongo.
 
 ### Running locally
 ```
-$ docker build -t go-sample-api
+$ docker build -t go-sample-api .
 $ docker compose up
 ```
